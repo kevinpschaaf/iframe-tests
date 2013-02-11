@@ -1,10 +1,9 @@
 enyo.kind({
 	name: "App",
-	kind: "FittableColumns",
 	fit: true,
 	components:[
-		{kind:"FittableRows", style:"width:50%;", components: [
-			{kind:"onyx.Toolbar", content:"Parent frame"},
+		{kind: "FittableRows", classes:"enyo-fit", components: [
+			{kind:"onyx.Toolbar", content:"iframe"},
 			{kind:"Scroller", fit:true, components: [
 				{kind:"Repeater", count:30, onSetupItem:"setupItem", ondragstart:"dragStart", ondrop:"drop", ondown:"eventInfo", onup:"eventInfo", components: [
 					{style:"border-bottom: 1px solid gray; background:white; padding: 10px;", name:"label"}
@@ -12,8 +11,7 @@ enyo.kind({
 			]},
 			{kind:"onyx.Toolbar", components:[{kind:"onyx.Button", content:"Clear", ontap:"clearInfo"}]},
 			{kind:"Scroller", style:"height:200px;", name:"info"}
-		]},
-		{name:"sandbox", fit:true, tag:"iframe", style:"height:100%; width:100%;", src:"iframe.html"}
+		]}
 	],
 	rendered: function() {
 		this.inherited(arguments);
@@ -21,7 +19,7 @@ enyo.kind({
 		this.setupRemoteEvents();
 	},
 	setupItem: function(inSender, inEvent) {
-		inEvent.item.$.label.setContent("LeftItem" + inEvent.index);
+		inEvent.item.$.label.setContent("RightItem" + inEvent.index);
 	},
 	appendInfo: function(str) {
 		this.$.info.createComponent({content:str, allowHtml:true}).render();
@@ -71,31 +69,15 @@ enyo.kind({
 		enyo.gesture.drag.dragEvent = inEvent;
 		this.appendInfo("remote down");
 	},
-	remoteUp: function(inEvent) {
-		var b = this.$.sandbox.getBounds();
-		if ((inEvent.clientX >= 0) && (inEvent.clientX <= b.width) &&
-			(inEvent.clientY >= 0) && (inEvent.clientY <= b.height)) {
-			enyo.gesture.downEvent = null;
-			enyo.gesture.drag.dragEvent = null;
-			this.appendInfo("remote up");
-		} else {
-			// When a drag starts in the iframe but drops in the parent,
-			// the "up" is fired into the iframe, not the parent (it's not
-			// symmetrical, since a drag from the parent to the iframe causes
-			// "up" to fire in the iframe as expected).  So this logic
-			// generates a local "up" event (which leads to a local drop)
-			// based on the remote up
-			inEvent.target = document.elementFromPoint(
-				inEvent.clientX + b.left,
-				inEvent.clientY + b.top
-			);
-			enyo.gesture.up(inEvent);
-		}
+	remoteUp: function() {
+		enyo.gesture.downEvent = null;
+		enyo.gesture.drag.dragEvent = null;
+		this.appendInfo("remote up");
 	},
 
 	// ---- RPC functions -----
 	setupRPC: function() {
-		this.remote = this.$.sandbox.hasNode().contentWindow;
+		this.remote = window.parent;
 		enyo.dispatcher.listen(window, "message", enyo.bind(this, "handleMessage"));
 	},
 	handleMessage: function(message) {
